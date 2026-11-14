@@ -61,17 +61,34 @@ The output directory is ignored by Git. Interactive figures may need static equi
 
 ## Scope
 
-The environment prepares the tools for the workflow. The dataset has not been downloaded, and the actual model, full training run, and application have not been implemented. The environment check uses synthetic data only. GPU acceleration is not a prerequisite for the initial CPU experiment; Metal support should be evaluated separately before changing the validated TensorFlow installation.
+The environment prepares the tools for the workflow. The dataset has not been downloaded, and the actual model, full training run, and application have not been implemented. The environment check uses synthetic data only. Apple Metal GPU acceleration is configured for this Mac. CPU remains available as a fallback and for baseline timing.
 
 Official references: [TensorFlow installation](https://www.tensorflow.org/install/pip), [Gradio ImageEditor](https://www.gradio.app/docs/gradio/imageeditor), [nbconvert WebPDF](https://nbconvert.readthedocs.io/en/latest/install.html#installing-chromium).
 
 ## Verified local setup
 
 - Python 3.12.13, macOS ARM64.
-- TensorFlow 2.21.0; detected device: CPU. No GPU was exposed by this installation.
+- TensorFlow 2.18.1 with the official tensorflow-metal 1.2.0 plugin; Apple M5 GPU detected. TensorFlow 2.21.0 could not load this plugin, so the compatible TensorFlow version is pinned.
 - `pip check`: no broken requirements.
 - All notebook cells executed successfully through the registered kernel.
 - A synthetic batch completed an optimizer update with a finite loss; model saving/loading passed.
 - OpenCV inpainting, SSIM, PNG writing, Matplotlib rendering, Plotly HTML output, and construction of the Gradio brush component passed.
 
 These checks validate the environment, not the quality of the future inpainting model or an end-to-end app.
+
+## Apple M5 GPU workflow
+
+The notebook includes device selection and an actual matrix-multiplication placement check. Restart the kernel, then run all cells. Supported TensorFlow operations use Metal automatically; auxiliary operations without Metal kernels (such as integer seed arithmetic) may execute on CPU. This is normal and soft device placement stays enabled.
+
+Compile the future Keras model with `jit_compile=False` to avoid requiring XLA support from the Metal plugin. Keep float32 for the initial experiment. Use `with tf.device(TRAINING_DEVICE):` around model construction/training when explicitly selecting the preferred device. CPU-only comparisons must hide GPUs before TensorFlow initializes them, so use a fresh kernel/process.
+
+```bash
+source .venv/bin/activate
+python scripts/verify_gpu.py
+```
+
+This verification asserts GPU placement of convolution output and gradients, applies an Adam update with masked MAE to a synthetic 128 × 128 batch, and exercises Keras graph-mode training. It is an environment check, not an experiment result. Small workloads may still run faster on CPU; benchmark the actual model before choosing batch sizes and epochs.
+
+The Mac has 16 GB of shared system memory. TensorFlow's Metal startup message reporting a device with 0 MB is not a measurement of physical GPU memory. Monitor system/process memory with psutil during actual training.
+
+Reference: [Apple's TensorFlow Metal plugin](https://developer.apple.com/metal/tensorflow-plugin/).

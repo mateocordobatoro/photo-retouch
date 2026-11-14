@@ -6,7 +6,7 @@ Photo Retouch explores image inpainting: a user uploads a photo, paints a mask o
 
 ## Current status
 
-Initial project setup. The training notebook contains library imports only. Data preparation, training, evaluation, and the application are planned work; no trained model or experimental results are included yet.
+Initial project setup. The training notebook contains library imports and GPU/CPU configuration. Data preparation, training, evaluation, and the application are planned work; no trained model or experimental results are included yet.
 
 ## Dataset and experiment plan
 
@@ -19,7 +19,7 @@ Use [Intel Image Classification](https://www.kaggle.com/datasets/puneet6060/inte
 - Train a small convolutional autoencoder from scratch with TensorFlow/Keras. Input: masked RGB image plus a binary mask channel. Target: original RGB image.
 - Optimize mean absolute error (MAE) inside the masked region and preserve original pixels outside the mask when composing the result.
 
-Begin with a one-epoch CPU trial and batch size 16, reducing to 8 if memory is constrained. Record runtime, hardware, available memory, and observed memory use before deciding the full training schedule. Hardware acceleration must be checked in the actual environment.
+Begin with a one-epoch CPU trial and batch size 16, reducing to 8 if memory is constrained. Record runtime, hardware, available memory, and observed memory use before deciding the full training schedule. Apple M5 Metal acceleration is configured and checked in the notebook; compare CPU/GPU timing on the actual model.
 
 ## Evaluation plan
 
@@ -40,7 +40,7 @@ source .venv/bin/activate
 python -m jupyterlab
 ```
 
-In VS Code, select **Photo Retouch (Python 3.12)** as the notebook kernel. The notebook contains imports only; dataset preparation, model training, and the app remain future work.
+In VS Code, select **Photo Retouch (Python 3.12)** as the notebook kernel. The notebook contains imports and a Metal GPU placement check; dataset preparation, model training, and the app remain future work.
 
 ## Academic deliverables
 
