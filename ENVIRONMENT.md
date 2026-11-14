@@ -2,22 +2,22 @@
 
 ## Open the project
 
-Open the repository folder in VS Code. The workspace settings point to `.venv/bin/python`. In the notebook kernel picker, select **Photo Retouch (Python 3.12)**. If needed, install the Microsoft Python and Jupyter extensions in VS Code.
+Open the repository folder in VS Code. The workspace settings point to `.venv/bin/python`. In the notebook kernel picker, select **photo-retouch (Python 3.12)**. If needed, install the Microsoft Python and Jupyter extensions in VS Code.
 
 ```bash
 source .venv/bin/activate
 python -m jupyterlab
 ```
 
-The local virtual environment is ignored by Git. `requirements.txt` lists direct dependencies; `requirements-lock.txt` records the exact installed direct and transitive versions for this macOS ARM64 / Python 3.12 environment. Other operating systems may need a fresh dependency resolution.
+The environment is named `photo-retouch`; activating it displays `(photo-retouch)` in the terminal. Its directory remains `.venv`. The local virtual environment is ignored by Git. `requirements.txt` lists direct dependencies; `requirements-lock.txt` records the exact installed direct and transitive versions for this macOS ARM64 / Python 3.12 environment. Other operating systems may need a fresh dependency resolution.
 
 ## Recreate the environment
 
 ```bash
-python3.12 -m venv .venv
+python3.12 -m venv --prompt photo-retouch .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
-python -m ipykernel install --user --name photo-retouch --display-name "Photo Retouch (Python 3.12)"
+python -m ipykernel install --user --name photo-retouch --display-name "photo-retouch (Python 3.12)"
 python -m playwright install chromium
 python -m pip check
 ```
