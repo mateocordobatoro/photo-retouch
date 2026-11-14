@@ -1,0 +1,28 @@
+# Training and numerical analysis
+tensorflow
+numpy
+scipy
+pandas
+scikit-learn
+# Images and reconstruction metrics
+pillow
+opencv-python
+scikit-image
+# Static and interactive visualization
+matplotlib
+seaborn
+plotly
+# Data access and resource monitoring
+kagglehub
+psutil
+tqdm
+# Notebook execution and export
+jupyterlab
+ipykernel
+ipywidgets
+nbformat
+nbclient
+nbconvert[webpdf]
+# Application options (UI implementation comes later)
+streamlit
+gradio

@@ -33,16 +33,14 @@ Upload a JPG or PNG, paint a mask with an adjustable brush, clear the mask when 
 
 ## Notebook environment
 
-Use a Python virtual environment with a compatible TensorFlow installation. The initial notebook uses these packages:
+The local environment uses Python 3.12 and `.venv`. See [ENVIRONMENT.md](ENVIRONMENT.md) for package roles, validation, and setup instructions.
 
 ```bash
-python -m venv .venv
 source .venv/bin/activate
-python -m pip install tensorflow numpy pandas matplotlib pillow opencv-python scikit-learn psutil tqdm jupyterlab ipykernel
 python -m jupyterlab
 ```
 
-Open `notebooks/photo_retouch_training.ipynb` and select the virtual environment's Python kernel. Package compatibility and versions will be recorded once the training environment has been validated. The notebook does not download data, install packages, or start training.
+In VS Code, select **Photo Retouch (Python 3.12)** as the notebook kernel. The notebook contains imports only; dataset preparation, model training, and the app remain future work.
 
 ## Academic deliverables
 
