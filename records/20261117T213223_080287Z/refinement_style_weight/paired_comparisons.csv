@@ -1,0 +1,6 @@
+method,baseline,masked_mae Δ,masked_mae 95% CI,masked_mae images better,feature_distance Δ,feature_distance 95% CI,feature_distance images better,KID×1000 Δ,KID subsets lower
+"Low-chroma, style ×10",Deep U-Net (MAE reference),0.021224093,"[+0.0200, +0.0225]",1%,-0.12224777,"[-0.1370, -0.1075]",84%,-4.024817335881421,100%
+"Low-chroma, style ×10",Low-chroma refiner,0.008525579,"[+0.0079, +0.0092]",6%,0.049713954,"[+0.0431, +0.0566]",22%,0.6967800257574155,2%
+"Low-chroma, style ×100",Deep U-Net (MAE reference),0.023141665,"[+0.0220, +0.0243]",1%,-0.07801468,"[-0.0936, -0.0625]",73%,-3.018048234643764,100%
+"Low-chroma, style ×100",Low-chroma refiner,0.01044315,"[+0.0097, +0.0112]",5%,0.09394706,"[+0.0842, +0.1044]",12%,1.703549126995072,0%
+"Low-chroma, style ×100","Low-chroma, style ×10",0.0019175715,"[+0.0013, +0.0026]",38%,0.044233102,"[+0.0366, +0.0524]",28%,1.0067691012376567,3%

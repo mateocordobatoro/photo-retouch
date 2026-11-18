@@ -1,7 +1,10 @@
-"""Loss-weight calibration and the adversarial refiner update."""
+"""Loss-weight calibration, the adversarial refiner update, and resumable runs."""
+import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
@@ -173,3 +176,99 @@ def make_train_step(arms, coarse_composite, loss_features, perceptual_weight,
         return values
 
     return train_step
+
+
+class CheckpointedRun:
+    """Resumable training of several arms on the shared batch sequence.
+
+    Every ``checkpoint_every`` updates, the models, optimizers, step count,
+    and settings are checkpointed, and the per-update log is written to a
+    CSV. A new run with the same checkpoint directory resumes from the last
+    checkpoint: the stored settings must match, and log rows after the
+    restored step are dropped. Because batches are rebuilt from the step
+    number, a resumed run continues the same image and mask sequence.
+    """
+
+    def __init__(self, arms, train_step, batches, checkpoint_dir, log_path,
+                 settings, max_to_keep=2):
+        self.arms = arms
+        self.train_step = train_step
+        self.batches = batches
+        self.log_path = Path(log_path)
+        self.settings = dict(settings)
+        self._step = tf.Variable(0, dtype=tf.int64, trainable=False)
+        self._settings = tf.Variable(
+            list(self.settings.values()), dtype=tf.float32, trainable=False
+        )
+
+        parts = {}
+        for arm in arms:
+            # Create optimizer slots now so a checkpoint restores into them.
+            arm.refiner_optimizer.build(arm.refiner.trainable_variables)
+            arm.discriminator_optimizer.build(arm.discriminator.trainable_variables)
+            parts.update({
+                f"{arm.key}_refiner": arm.refiner,
+                f"{arm.key}_discriminator": arm.discriminator,
+                f"{arm.key}_refiner_optimizer": arm.refiner_optimizer,
+                f"{arm.key}_discriminator_optimizer": arm.discriminator_optimizer,
+            })
+        self.checkpoint = tf.train.Checkpoint(
+            step=self._step, settings=self._settings, **parts
+        )
+        self.manager = tf.train.CheckpointManager(
+            self.checkpoint, str(checkpoint_dir), max_to_keep=max_to_keep
+        )
+
+        self.log = []
+        if self.manager.latest_checkpoint:
+            self.checkpoint.restore(self.manager.latest_checkpoint).assert_consumed()
+            restored = self._settings.numpy()
+            expected = np.array(list(self.settings.values()), np.float32)
+            if not np.allclose(restored, expected):
+                raise ValueError(
+                    f"Checkpoint settings {restored} differ from {expected}."
+                )
+            saved_log = pd.read_csv(self.log_path)
+            self.log = saved_log[saved_log["step"] <= self.completed].to_dict("records")
+
+    @property
+    def completed(self):
+        return int(self._step.numpy())
+
+    def log_frame(self):
+        return pd.DataFrame(self.log)
+
+    def run(self, until_step, report_every=250, checkpoint_every=250):
+        """Train up to ``until_step`` total updates, reporting window means."""
+        if self.completed:
+            print(f"Continuing from step {self.completed}.")
+        window_start = time.perf_counter()
+
+        for step in range(self.completed, until_step):
+            images, masks = self.batches(step)
+            values = self.train_step(images, masks)
+            self.log.append(
+                {"step": step + 1, **{name: float(value) for name, value in values.items()}}
+            )
+            self._step.assign(step + 1)
+            done = step + 1 == until_step
+
+            if (step + 1) % report_every == 0 or done:
+                window = pd.DataFrame(self.log[-report_every:])
+                window = window[window["step"] > step + 1 - report_every]
+                per_step = (time.perf_counter() - window_start) / len(window)
+                window_start = time.perf_counter()
+                print(f"Steps {int(window['step'].min())}–{step + 1} ({per_step:.2f} s/step)")
+                for arm in self.arms:
+                    key = arm.key
+                    print(
+                        f"  {key:<12} L1: {window[f'{key}_l1'].mean():.4f} | "
+                        f"Perc: {window[f'{key}_perceptual'].mean():.1f} | "
+                        f"Style: {window[f'{key}_style'].mean():.1f} | "
+                        f"D: {window[f'{key}_discriminator_loss'].mean():.3f} | "
+                        f"Adv weight: {window[f'{key}_adv_weight'].mean():.3g}"
+                    )
+            if (step + 1) % checkpoint_every == 0 or done:
+                self.log_path.parent.mkdir(parents=True, exist_ok=True)
+                self.log_frame().to_csv(self.log_path, index=False)
+                self.manager.save(checkpoint_number=step + 1)
