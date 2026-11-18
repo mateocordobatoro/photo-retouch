@@ -1,0 +1,20 @@
+{
+  "reference_checkpoint": "models/best_deep_unet_6000_tuned.keras",
+  "checkpoint_sha256": "fbf1446aaaac9820961d06f7fc2e41217a28f1c705788b5909adfb443eb8cab0",
+  "packages": {
+    "tensorflow": "2.18.1",
+    "keras": "3.15.1",
+    "tensorflow-metal": "1.2.0",
+    "numpy": "2.0.2",
+    "pillow": "13.0.0",
+    "opencv-python": "5.0.0.93"
+  },
+  "mask_convention": "1 = missing, 0 = visible",
+  "image_size": [
+    128,
+    128
+  ],
+  "batch_size": 16,
+  "validation_mask_order": "Matches validation_400.csv row order",
+  "test_manifest_saved": false
+}

@@ -1,0 +1,9 @@
+{
+  "generator_updates": 50,
+  "adversarial_weight": 0.9377797842025757,
+  "initial_gradient_ratio": 0.2,
+  "measured_gradient_ratio": 4.106450080871582,
+  "control_calibration_mae": 0.07376842945814133,
+  "gan_calibration_mae": 0.1035938411951065,
+  "decision": "Stop pilot: color artifacts and increased reconstruction error"
+}
