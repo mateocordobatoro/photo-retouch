@@ -16,6 +16,7 @@ from .paths import MODEL_DIR
 
 LEARNING_RATE = 1e-4
 ADV_RATIO = 0.5
+SHIFT_SEED = 2043
 
 
 def saved_loss_weights(checkpoint_dir=MODEL_DIR / "refinement"):
@@ -71,7 +72,12 @@ def calibrate_loss_weights(refiner, batches, coarse_composite, loss_features,
 
 @dataclass
 class RefinerArm:
-    """One refiner trained adversarially, with its own discriminator and optimizers."""
+    """One refiner trained adversarially, with its own discriminator and optimizers.
+
+    ``loss_shift`` > 0 rolls the images seen by the loss networks (VGG16 and
+    the discriminator) by a random offset in [0, loss_shift) pixels per axis,
+    redrawn at every update. 0 keeps them at fixed positions.
+    """
 
     key: str
     refiner: keras.Model
@@ -80,12 +86,13 @@ class RefinerArm:
     style_weight: float
     refiner_optimizer: keras.optimizers.Optimizer
     discriminator_optimizer: keras.optimizers.Optimizer
+    loss_shift: int = 0
 
 
 def new_arm(key, refine_fn, style_weight, initial_refiner, initial_discriminator,
-            learning_rate=LEARNING_RATE):
+            learning_rate=LEARNING_RATE, upsampling="nearest", loss_shift=0):
     """Copy shared initial weights into a fresh refiner and discriminator."""
-    refiner = build_refiner(f"refiner_{key}")
+    refiner = build_refiner(f"refiner_{key}", upsampling)
     refiner.set_weights(initial_refiner.get_weights())
     discriminator = build_patch_discriminator()
     discriminator.set_weights(initial_discriminator.get_weights())
@@ -97,11 +104,12 @@ def new_arm(key, refine_fn, style_weight, initial_refiner, initial_discriminator
         style_weight=style_weight,
         refiner_optimizer=keras.optimizers.Adam(learning_rate, beta_1=0.5, beta_2=0.999),
         discriminator_optimizer=keras.optimizers.Adam(learning_rate, beta_1=0.5, beta_2=0.999),
+        loss_shift=loss_shift,
     )
 
 
 def make_train_step(arms, coarse_composite, loss_features, perceptual_weight,
-                    adv_ratio=ADV_RATIO):
+                    adv_ratio=ADV_RATIO, shift_seed=SHIFT_SEED):
     """Compiled update for several arms on one shared batch.
 
     For each arm: update its discriminator (hinge loss on hole patches), then
@@ -111,6 +119,11 @@ def make_train_step(arms, coarse_composite, loss_features, perceptual_weight,
     reconstruction gradient norm. Both gradients are combined before one
     backward pass through the refiner. The style distance is logged even for
     arms whose style weight is zero.
+
+    For arms with ``loss_shift``, the truth, the result, and the mask are
+    rolled by the same offset before VGG16 and the discriminator see them;
+    the offset depends on ``shift_seed`` and the arm's update count, so a
+    resumed run draws the same offsets. Masked L1 is unaffected.
     """
 
     @tf.function
@@ -122,13 +135,42 @@ def make_train_step(arms, coarse_composite, loss_features, perceptual_weight,
         values = {}
 
         for arm in arms:
+            if arm.loss_shift:
+                # Integer stateless sampling fails on the Metal plugin; draw a
+                # float on the CPU and round down instead.
+                with tf.device("/CPU:0"):
+                    offsets = tf.cast(tf.floor(tf.random.stateless_uniform(
+                        [2],
+                        seed=tf.stack([
+                            tf.constant(shift_seed, tf.int64),
+                            tf.cast(arm.refiner_optimizer.iterations, tf.int64),
+                        ]),
+                        minval=0.0, maxval=float(arm.loss_shift),
+                    )), tf.int32)
+
+                def view(x, offsets=offsets):
+                    return tf.roll(x, offsets, axis=[1, 2])
+
+                arm_masks = view(masks)
+                arm_weights = patch_weights_from_mask(arm_masks)
+                arm_truth_features = loss_features(
+                    vgg_preprocess(view(images)), training=False
+                )
+                arm_real_input = view(real_input)
+            else:
+                def view(x):
+                    return x
+
+                arm_masks, arm_weights = masks, weights
+                arm_truth_features, arm_real_input = truth_features, real_input
+
             fake = tf.stop_gradient(arm.refine_fn(arm.refiner, coarse, masks))
             with tf.GradientTape() as tape:
-                real_scores = arm.discriminator(real_input, training=True)
+                real_scores = arm.discriminator(arm_real_input, training=True)
                 fake_scores = arm.discriminator(
-                    tf.concat([fake, masks], axis=-1), training=True
+                    view(tf.concat([fake, masks], axis=-1)), training=True
                 )
-                d_loss = hinge_discriminator_loss(real_scores, fake_scores, weights)
+                d_loss = hinge_discriminator_loss(real_scores, fake_scores, arm_weights)
             gradients = tape.gradient(d_loss, arm.discriminator.trainable_variables)
             arm.discriminator_optimizer.apply_gradients(
                 zip(gradients, arm.discriminator.trainable_variables)
@@ -138,17 +180,17 @@ def make_train_step(arms, coarse_composite, loss_features, perceptual_weight,
                 result = arm.refine_fn(arm.refiner, coarse, masks, training=True)
                 l1 = hole_l1(images, result, masks)
                 perceptual, style = perceptual_and_style(
-                    truth_features,
-                    loss_features(vgg_preprocess(result), training=False),
-                    masks,
+                    arm_truth_features,
+                    loss_features(vgg_preprocess(view(result)), training=False),
+                    arm_masks,
                 )
                 reconstruction = (
                     l1 + perceptual_weight * perceptual + arm.style_weight * style
                 )
                 generated_scores = arm.discriminator(
-                    tf.concat([result, masks], axis=-1), training=False
+                    view(tf.concat([result, masks], axis=-1)), training=False
                 )
-                adversarial = -patch_mean(generated_scores, weights)
+                adversarial = -patch_mean(generated_scores, arm_weights)
 
             reconstruction_gradient = tape.gradient(reconstruction, result)
             adversarial_gradient = tape.gradient(adversarial, result)
@@ -178,6 +220,33 @@ def make_train_step(arms, coarse_composite, loss_features, perceptual_weight,
     return train_step
 
 
+def _checkpoint_parts(arm):
+    """An arm's models and optimizers, keyed as in a CheckpointedRun checkpoint."""
+    # Create optimizer slots now so a checkpoint restores into them.
+    for optimizer, model in [(arm.refiner_optimizer, arm.refiner),
+                             (arm.discriminator_optimizer, arm.discriminator)]:
+        if not optimizer.built:
+            optimizer.build(model.trainable_variables)
+    return {
+        f"{arm.key}_refiner": arm.refiner,
+        f"{arm.key}_discriminator": arm.discriminator,
+        f"{arm.key}_refiner_optimizer": arm.refiner_optimizer,
+        f"{arm.key}_discriminator_optimizer": arm.discriminator_optimizer,
+    }
+
+
+def restore_arm(arm, checkpoint_path):
+    """Load one arm's state from any checkpoint of a run that trained it.
+
+    The checkpoint may hold other arms too; only this arm's objects are read,
+    and every one of them must be found. Returns the arm's completed updates.
+    """
+    tf.train.Checkpoint(**_checkpoint_parts(arm)).restore(
+        str(checkpoint_path)
+    ).expect_partial().assert_existing_objects_matched()
+    return int(arm.refiner_optimizer.iterations.numpy())
+
+
 class CheckpointedRun:
     """Resumable training of several arms on the shared batch sequence.
 
@@ -203,15 +272,7 @@ class CheckpointedRun:
 
         parts = {}
         for arm in arms:
-            # Create optimizer slots now so a checkpoint restores into them.
-            arm.refiner_optimizer.build(arm.refiner.trainable_variables)
-            arm.discriminator_optimizer.build(arm.discriminator.trainable_variables)
-            parts.update({
-                f"{arm.key}_refiner": arm.refiner,
-                f"{arm.key}_discriminator": arm.discriminator,
-                f"{arm.key}_refiner_optimizer": arm.refiner_optimizer,
-                f"{arm.key}_discriminator_optimizer": arm.discriminator_optimizer,
-            })
+            parts.update(_checkpoint_parts(arm))
         self.checkpoint = tf.train.Checkpoint(
             step=self._step, settings=self._settings, **parts
         )
@@ -238,10 +299,31 @@ class CheckpointedRun:
     def log_frame(self):
         return pd.DataFrame(self.log)
 
+    def _print_window(self, window, note=""):
+        print(f"Steps {int(window['step'].min())}–{int(window['step'].max())}{note}")
+        for arm in self.arms:
+            key = arm.key
+            print(
+                f"  {key:<16} L1: {window[f'{key}_l1'].mean():.4f} | "
+                f"Perc: {window[f'{key}_perceptual'].mean():.1f} | "
+                f"Style: {window[f'{key}_style'].mean():.1f} | "
+                f"D: {window[f'{key}_discriminator_loss'].mean():.3f} | "
+                f"Adv weight: {window[f'{key}_adv_weight'].mean():.3g}"
+            )
+
     def run(self, until_step, report_every=250, checkpoint_every=250):
-        """Train up to ``until_step`` total updates, reporting window means."""
+        """Train up to ``until_step`` total updates, reporting window means.
+
+        When resuming, the windows already in the log are reported first.
+        """
         if self.completed:
-            print(f"Continuing from step {self.completed}.")
+            print(f"Restored {self.completed} completed updates from the checkpoint.")
+            logged = self.log_frame()
+            for start in range(0, self.completed, report_every):
+                self._print_window(
+                    logged[(logged["step"] > start) & (logged["step"] <= start + report_every)],
+                    " (logged)",
+                )
         window_start = time.perf_counter()
 
         for step in range(self.completed, until_step):
@@ -258,16 +340,7 @@ class CheckpointedRun:
                 window = window[window["step"] > step + 1 - report_every]
                 per_step = (time.perf_counter() - window_start) / len(window)
                 window_start = time.perf_counter()
-                print(f"Steps {int(window['step'].min())}–{step + 1} ({per_step:.2f} s/step)")
-                for arm in self.arms:
-                    key = arm.key
-                    print(
-                        f"  {key:<12} L1: {window[f'{key}_l1'].mean():.4f} | "
-                        f"Perc: {window[f'{key}_perceptual'].mean():.1f} | "
-                        f"Style: {window[f'{key}_style'].mean():.1f} | "
-                        f"D: {window[f'{key}_discriminator_loss'].mean():.3f} | "
-                        f"Adv weight: {window[f'{key}_adv_weight'].mean():.3g}"
-                    )
+                self._print_window(window, f" ({per_step:.2f} s/step)")
             if (step + 1) % checkpoint_every == 0 or done:
                 self.log_path.parent.mkdir(parents=True, exist_ok=True)
                 self.log_frame().to_csv(self.log_path, index=False)

@@ -58,12 +58,14 @@ def gated_conv(x, filters, kernel_size=3, strides=1, dilation_rate=1, name=None)
     return layers.Multiply(name=name)([features, gate])
 
 
-def build_refiner(name):
+def build_refiner(name, upsampling="nearest"):
     """Gated-conv encoder-decoder: 128 → 32 px, dilations 2/4/8, skip connections.
 
     Input: coarse composite plus mask (4 channels). Output: a 3-channel
     residual. The last layer starts at zero, so a new refiner reproduces
-    the coarse result exactly.
+    the coarse result exactly. ``upsampling`` ("nearest" or "bilinear") sets
+    the interpolation of the two ×2 decoder stages; it adds no weights, so
+    refiners with either setting can share initial weights.
     """
     inputs = keras.Input(shape=(128, 128, 4))
 
@@ -77,10 +79,10 @@ def build_refiner(name):
         x = gated_conv(x, 128, dilation_rate=rate, name=f"dilated{rate}")
 
     x = gated_conv(x, 128, name="dec32")
-    x = layers.UpSampling2D(name="up64")(x)
+    x = layers.UpSampling2D(interpolation=upsampling, name="up64")(x)
     x = layers.Concatenate(name="skip64")([x, x64])
     x = gated_conv(x, 64, name="dec64")
-    x = layers.UpSampling2D(name="up128")(x)
+    x = layers.UpSampling2D(interpolation=upsampling, name="up128")(x)
     x = layers.Concatenate(name="skip128")([x, x128])
     x = gated_conv(x, 32, name="dec128")
 

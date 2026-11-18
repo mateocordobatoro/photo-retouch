@@ -1,0 +1,6 @@
+method,baseline,masked_mae Δ,masked_mae 95% CI,masked_mae images better,feature_distance Δ,feature_distance 95% CI,feature_distance images better,KID×1000 Δ,KID subsets lower
+"Low-chroma, bilinear",Low-chroma refiner,0.00033720545,"[+0.0001, +0.0007]",45%,0.0049123536,"[-0.0000, +0.0099]",45%,0.4643575771571706,7%
+"Low-chroma, shifted losses",Low-chroma refiner,8.441462e-05,"[-0.0002, +0.0004]",50%,0.0013026216,"[-0.0034, +0.0059]",47%,0.0389292234957761,45%
+"Low-chroma, bilinear + shifted",Low-chroma refiner,-0.0006666133,"[-0.0010, -0.0003]",58%,0.008697707,"[+0.0028, +0.0143]",45%,0.5580076680012036,5%
+"Low-chroma, bilinear + shifted","Low-chroma, bilinear",-0.0010038187,"[-0.0012, -0.0008]",66%,0.0037853536,"[+0.0001, +0.0072]",49%,0.09365009084403297,31%
+"Low-chroma, bilinear + shifted","Low-chroma, shifted losses",-0.0007510279,"[-0.0011, -0.0004]",56%,0.007395086,"[+0.0031, +0.0116]",43%,0.5190784445054275,9%
