@@ -55,8 +55,10 @@ Trained models in `models/` are ignored by Git. Back them up separately; without
 | nbformat | Read and validate notebook files. |
 | nbclient | Execute notebooks programmatically for verification. |
 | nbconvert[webpdf] | Export notebooks to HTML/PDF. The WebPDF exporter uses Playwright and a separately installed Chromium browser. |
-| Streamlit | Planned Python app framework for upload, controls, plots, and downloads. The brush integration still needs implementation and validation. |
-| Gradio | Alternative demo framework with an ImageEditor brush component; installed for prototyping if Streamlit's brush integration is unsuitable. |
+| Streamlit | Considered for the app; Gradio was used instead. |
+| Gradio | The app's interface (`app/app.py`): ImageEditor brush, result, stage gallery, and PNG download. |
+| PyTorch | Runs the app's pretrained diffusion model (stage 2) on Apple Metal (MPS), CUDA, or CPU. Not used for training. |
+| diffusers, transformers, accelerate, safetensors | Load and run Stable Diffusion 1.5 Inpainting for the app's stage 2. `importlib_metadata` is pinned below 10: version 10 pulls in `lazy-importer`, a new package with no author or project links on PyPI. |
 
 Python's standard library also provides `pathlib`, `json`, `platform`, `random`, `time`, and `io`; these do not require pip installation. Not every installed package needs to be imported in the training notebook: application and export tools belong in their respective stages.
 

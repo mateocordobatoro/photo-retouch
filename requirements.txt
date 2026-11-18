@@ -25,6 +25,13 @@ ipywidgets
 nbformat
 nbclient
 nbconvert[webpdf]
-# Application options (UI implementation comes later)
+# Application (app/app.py): interface and the pretrained stage-2 model
 streamlit
 gradio
+torch
+diffusers
+transformers
+accelerate
+safetensors
+# Version 10 pulls in lazy-importer, an unvetted new package.
+importlib_metadata<10

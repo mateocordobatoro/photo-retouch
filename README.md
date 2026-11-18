@@ -6,7 +6,10 @@ Photo Retouch explores image inpainting: a user uploads a photo, paints a mask o
 
 ## Current status
 
-Initial project setup. The training notebook contains library imports and GPU/CPU configuration. Data preparation, training, evaluation, and the application are planned work; no trained model or experimental results are included yet.
+- `notebooks/photo_retouch_training.ipynb`: data preparation, the coarse U-Net, the OpenCV comparison, the adversarial experiments, and the two-stage refiner, up to the low-chroma refiner (the current reference model).
+- `notebooks/photo_retouch_refinement.ipynb`: follow-up experiments on the refiner's texture artifacts (style weight, source of the grid, a second-seed replicate).
+- `app/`: the Gradio app, which chains our model with a pretrained diffusion model (see [Application](#application)).
+- Not done yet: the test-set evaluation, the final report sections, the PDF export, and the presentation.
 
 ## Dataset and experiment plan
 
@@ -27,9 +30,40 @@ Compare the autoencoder with an OpenCV inpainting baseline using identical test 
 
 Personal photographs are reserved for private qualitative inference tests. Their hidden backgrounds are unknown, so these examples assess visual plausibility rather than reconstruction error. At 128 × 128, fine structures and large masked regions may be difficult to reconstruct.
 
-## Planned application
+## Application
 
-Upload a JPG or PNG, paint a mask with an adjustable brush, clear the mask when needed, run inpainting, inspect the result, and download a PNG. The interface will use the labels **Upload your photo**, **Choose photo**, **Original**, **Brush size**, **Clear mask**, **Result**, **Remove**, and **Download PNG**. Local inference will be validated before choosing public demo hosting.
+`app/app.py` removes a painted region from a photo of any size: upload a JPG or PNG, paint over the region with the brush (adjustable size, eraser, clear), press **Remove**, and download the result as a PNG. The fill comes from two models in sequence:
+
+1. **Our model (stage 1):** the coarse U-Net and the low-chroma refiner from the notebooks, at 128 × 128, on a square crop around the painted area.
+2. **Pretrained refinement (stage 2):** Stable Diffusion 1.5 Inpainting ([`stable-diffusion-v1-5/stable-diffusion-inpainting`](https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-inpainting), CreativeML OpenRAIL-M license), used as is and not trained in this project. It starts from stage 1's fill with part of it replaced by noise and completes it at 512 × 512. **Refinement strength** sets how much of stage 1's fill it may change: 0 shows our model alone; the default is 0.7.
+
+Outside the painted area and a blend margin of a few pixels, the photo is unchanged. A gallery shows the crop at each stage. The pipeline is in `src/photo_retouch/inpaint.py`.
+
+Run it locally from the project root, then open http://127.0.0.1:7860:
+
+```bash
+python app/app.py
+```
+
+The first run downloads about 2.1 GB of fp16 weights for stage 2 into the Hugging Face cache (`~/.cache/huggingface/`), outside the repository. On the Apple M5, removing a person from an 800 × 600 photo took 0.4 s with stage 1 alone and about 8 s at strength 0.7.
+
+### Publish the app
+
+The same app runs on a Hugging Face Space with ZeroGPU hardware: stage 2 runs on a GPU attached only for that call, and stage 1 on the CPU. The Space downloads the stage-2 weights itself; only our two models (48 MB) are uploaded.
+
+1. On Hugging Face, create a Space with SDK **Gradio** and hardware **ZeroGPU**.
+2. Assemble the Space folder: the app, the package modules it imports, the two stage-1 models, `app/requirements-space.txt` as its requirements, and `app/SPACE_README.md` as its card.
+
+   ```bash
+   python scripts/build_space.py
+   ```
+
+3. Log in and upload `outputs/space/` to the Space:
+
+   ```bash
+   hf auth login
+   hf upload <user>/<space> outputs/space . --repo-type space
+   ```
 
 ## Notebook environment
 
