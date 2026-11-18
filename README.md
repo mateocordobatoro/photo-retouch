@@ -40,7 +40,7 @@ source .venv/bin/activate
 python -m jupyterlab
 ```
 
-In VS Code, select **photo-retouch (Python 3.12)** as the notebook kernel. The notebook contains imports and a Metal GPU placement check; dataset preparation, model training, and the app remain future work.
+In VS Code, select **photo-retouch (Python 3.12)** as the notebook kernel. Current work is in `notebooks/photo_retouch_refinement.ipynb`, which imports the shared code in `src/photo_retouch/`. `notebooks/photo_retouch_training.ipynb` records the earlier experiments. See [ENVIRONMENT.md](ENVIRONMENT.md#notebooks-and-shared-code) for the layout.
 
 ## Academic deliverables
 

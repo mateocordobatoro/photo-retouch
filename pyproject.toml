@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "photo-retouch"
+version = "0.1.0"
+description = "Reusable data, model, and evaluation code for the Photo Retouch inpainting notebooks."
+requires-python = ">=3.12"
+# Dependencies are pinned in requirements.txt / requirements-lock.txt.
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

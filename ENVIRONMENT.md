@@ -17,10 +17,19 @@ The environment is named `photo-retouch`; activating it displays `(photo-retouch
 python3.12 -m venv --prompt photo-retouch .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
+python -m pip install --no-build-isolation --no-deps -e .
 python -m ipykernel install --user --name photo-retouch --display-name "photo-retouch (Python 3.12)"
 python -m playwright install chromium
 python -m pip check
 ```
+
+## Notebooks and shared code
+
+- `notebooks/photo_retouch_training.ipynb` records every experiment up to the low-chroma refiner, with outputs. It is no longer extended.
+- `notebooks/photo_retouch_refinement.ipynb` is the current notebook. It loads the saved models and the frozen validation set and checks them against the tables in `records/` before any new experiment.
+- `src/photo_retouch/` holds the reusable code imported by the current notebook: data loading, models, losses, training updates, metrics, and plotting. `pyproject.toml` declares it as the `photo-retouch` package. The editable install (`pip install -e .`) means changes take effect after a kernel restart, without reinstalling.
+
+Trained models in `models/` are ignored by Git. Back them up separately; without them, the earlier experiments must be retrained.
 
 ## Libraries by workflow stage
 
