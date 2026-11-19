@@ -1,0 +1,21 @@
+method,category,masked_mae,feature_distance
+OpenCV Telea,sea,0.0696284,0.98797286
+OpenCV Telea,forest,0.115038045,1.1921916
+OpenCV Telea,street,0.116545156,1.114126
+OpenCV Telea,buildings,0.118418425,1.0449928
+Coarse U-Net,sea,0.057574477,0.7091677
+Coarse U-Net,forest,0.10156876,0.9921542
+Coarse U-Net,street,0.10289326,0.95137316
+Coarse U-Net,buildings,0.10383745,0.884001
+Low-chroma refiner,sea,0.062574305,0.5598861
+Low-chroma refiner,forest,0.11848994,0.7163129
+Low-chroma refiner,street,0.1183045,0.7976629
+Low-chroma refiner,buildings,0.117816344,0.7831154
+Pretrained diffusion,sea,0.106800444,0.8874792
+Pretrained diffusion,forest,0.16045447,0.84981424
+Pretrained diffusion,street,0.15292935,0.87093717
+Pretrained diffusion,buildings,0.13169523,0.6800453
+Our model + diffusion,sea,0.06566712,0.4747728
+Our model + diffusion,forest,0.120131314,0.6584847
+Our model + diffusion,street,0.1176751,0.68016326
+Our model + diffusion,buildings,0.10742324,0.5695208

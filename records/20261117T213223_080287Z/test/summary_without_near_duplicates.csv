@@ -1,0 +1,6 @@
+method,masked_mae,feature_distance
+OpenCV Telea,0.104996294,1.0866538
+Coarse U-Net,0.091531165,0.88571846
+Low-chroma refiner,0.104354,0.7155367
+Pretrained diffusion,0.13803087,0.8236786
+Our model + diffusion,0.10274609,0.5966632

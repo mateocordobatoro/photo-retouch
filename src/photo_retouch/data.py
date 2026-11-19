@@ -1,4 +1,4 @@
-"""Image loading, the frozen validation set, masks, and training batches.
+"""Image loading, the frozen validation and test sets, masks, and training batches.
 
 Masks use 1 for missing pixels and 0 for visible ones.
 """
@@ -15,6 +15,10 @@ from .paths import PROJECT_ROOT, latest_record_dir
 
 IMAGE_SIZE = (128, 128)
 CATEGORIES = ["sea", "forest", "street", "buildings"]
+TEST_IMAGE_DIR = PROJECT_ROOT / "data" / "intel-image-classification" / "seg_test" / "seg_test"
+TEST_MANIFEST = "test_400.csv"
+TEST_MASKS = "test_mixed_masks.npz"
+TEST_MASK_SEED = 2060
 
 
 def load_image(path):
@@ -74,15 +78,27 @@ class ValidationSet:
         return indices
 
 
-def load_validation_set(record_dir=None):
-    """Load the 400 validation images and masks saved in a record snapshot."""
-    record_dir = Path(record_dir) if record_dir else latest_record_dir()
-    manifest = pd.read_csv(record_dir / "validation_400.csv")
-    masks = np.load(record_dir / "validation_mixed_masks.npz")["masks"]
+def load_image_set(record_dir, manifest_file, masks_file):
+    """Images listed in a saved manifest, with their saved fixed masks."""
+    record_dir = Path(record_dir)
+    manifest = pd.read_csv(record_dir / manifest_file)
+    masks = np.load(record_dir / masks_file)["masks"]
     originals = np.stack([load_image(PROJECT_ROOT / path) for path in manifest["path"]])
     if len(originals) != len(masks):
         raise ValueError("The manifest and the saved masks differ in length.")
     return ValidationSet(record_dir, manifest, originals, masks.astype(np.float32))
+
+
+def load_validation_set(record_dir=None):
+    """Load the 400 validation images and masks saved in a record snapshot."""
+    record_dir = Path(record_dir) if record_dir else latest_record_dir()
+    return load_image_set(record_dir, "validation_400.csv", "validation_mixed_masks.npz")
+
+
+def load_test_set(record_dir=None):
+    """Load the 400 test images and masks frozen in a snapshot's test/ folder."""
+    record_dir = Path(record_dir) if record_dir else latest_record_dir()
+    return load_image_set(record_dir / "test", TEST_MANIFEST, TEST_MASKS)
 
 
 def create_mixed_mask(rng):
@@ -125,6 +141,31 @@ def create_mixed_mask(rng):
             mask.paste(silhouette, (x, y))
 
     return np.asarray(mask, dtype=np.float32)[..., None] / 255
+
+
+def reserved_test_selection(per_category=100, seed=42):
+    """The test images reserved when the dataset was split, in the same order.
+
+    The training notebook drew them per category with
+    ``pd.Series(sorted seg_test files).sample(n=100, random_state=42)`` but
+    never saved the list; the same rule rebuilds it.
+    """
+    rows = []
+    for category in CATEGORIES:
+        files = sorted((TEST_IMAGE_DIR / category).glob("*.jpg"))
+        picked = pd.Series(files).sample(n=per_category, random_state=seed)
+        rows.extend(
+            (path.relative_to(PROJECT_ROOT).as_posix(), category) for path in picked
+        )
+    return pd.DataFrame(rows, columns=["path", "category"])
+
+
+def fixed_masks(count, seed=TEST_MASK_SEED):
+    """One mixed mask per image, each drawn from its own seed (count × 128 × 128 × 1)."""
+    return np.stack([
+        create_mixed_mask(np.random.default_rng(np.random.SeedSequence([seed, index])))
+        for index in range(count)
+    ]) > 0.5
 
 
 class TrainingBatches:

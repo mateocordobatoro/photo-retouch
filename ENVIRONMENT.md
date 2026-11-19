@@ -26,8 +26,9 @@ python -m pip check
 ## Notebooks and shared code
 
 - `notebooks/photo_retouch_training.ipynb` records every experiment up to the low-chroma refiner, with outputs. It is no longer extended.
-- `notebooks/photo_retouch_refinement.ipynb` is the current notebook. It loads the saved models and the frozen validation set and checks them against the tables in `records/` before any new experiment.
-- `src/photo_retouch/` holds the reusable code imported by the current notebook: data loading, models, losses, training updates, metrics, and plotting. `pyproject.toml` declares it as the `photo-retouch` package. The editable install (`pip install -e .`) means changes take effect after a kernel restart, without reinstalling.
+- `notebooks/photo_retouch_refinement.ipynb` holds the refinement experiments. It loads the saved models and the frozen validation set and checks them against the tables in `records/` before any new experiment.
+- `notebooks/photo_retouch_evaluation.ipynb` is the final evaluation on the reserved test set. Its diffusion results are cached in `models/test_evaluation/`; without the cache, re-running it takes about two hours on the Apple M5.
+- `src/photo_retouch/` holds the reusable code imported by the notebooks and the app: data loading, models, losses, training updates, metrics, plotting, write-once records, and the app's inpainting pipeline. `pyproject.toml` declares it as the `photo-retouch` package. The editable install (`pip install -e .`) means changes take effect after a kernel restart, without reinstalling.
 
 Trained models in `models/` are ignored by Git. Back them up separately; without them, the earlier experiments must be retrained.
 

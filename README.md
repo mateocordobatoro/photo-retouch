@@ -8,8 +8,9 @@ Photo Retouch explores image inpainting: a user uploads a photo, paints a mask o
 
 - `notebooks/photo_retouch_training.ipynb`: data preparation, the coarse U-Net, the OpenCV comparison, the adversarial experiments, and the two-stage refiner, up to the low-chroma refiner (the current reference model).
 - `notebooks/photo_retouch_refinement.ipynb`: follow-up experiments on the refiner's texture artifacts (style weight, source of the grid, a second-seed replicate).
+- `notebooks/photo_retouch_evaluation.ipynb`: the final evaluation on the 400 reserved test images, used once: OpenCV, our models, the pretrained diffusion model alone, and the app's chain. The test list and masks are frozen in `records/<snapshot>/test/`.
 - `app/`: the Gradio app, which chains our model with a pretrained diffusion model (see [Application](#application)).
-- Not done yet: the test-set evaluation, the final report sections, the PDF export, and the presentation.
+- Not done yet: the final report sections, the PDF export, and the presentation.
 
 ## Dataset and experiment plan
 

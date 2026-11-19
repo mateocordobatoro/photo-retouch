@@ -1,0 +1,6 @@
+method,baseline,masked_mae Δ,masked_mae 95% CI,masked_mae images better,feature_distance Δ,feature_distance 95% CI,feature_distance images better,KID×1000 Δ,KID subsets lower
+Coarse U-Net,OpenCV Telea,-0.013439013,"[-0.0150, -0.0119]",88%,-0.20064688,"[-0.2183, -0.1830]",91%,-9.229281939752275,100%
+Low-chroma refiner,OpenCV Telea,-0.0006112377,"[-0.0023, +0.0011]",48%,-0.3705765,"[-0.3970, -0.3456]",96%,-14.848500486349126,100%
+Low-chroma refiner,Coarse U-Net,0.012827775,"[+0.0119, +0.0138]",5%,-0.16992964,"[-0.1848, -0.1549]",90%,-5.619218546596848,100%
+Our model + diffusion,Low-chroma refiner,-0.0015720746,"[-0.0033, -0.0000]",48%,-0.118508905,"[-0.1357, -0.1019]",76%,-1.9158624809462577,99%
+Our model + diffusion,Pretrained diffusion,-0.035245672,"[-0.0407, -0.0303]",86%,-0.22633357,"[-0.2730, -0.1831]",75%,-0.9310426594771083,88%

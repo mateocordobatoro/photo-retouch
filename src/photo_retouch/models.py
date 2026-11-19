@@ -44,6 +44,21 @@ def predict_coarse(coarse_model, validation, batch_size=16):
     )
 
 
+def opencv_telea(image_set, radius=3):
+    """Classical baseline: OpenCV's Telea inpainting of the visible pixels."""
+    import cv2
+
+    return image_set.compose(np.stack([
+        cv2.inpaint(
+            np.round(visible * 255).astype(np.uint8),
+            (mask[..., 0] * 255).astype(np.uint8),
+            inpaintRadius=radius,
+            flags=cv2.INPAINT_TELEA,
+        ).astype(np.float32) / 255
+        for visible, mask in zip(image_set.visible, image_set.masks)
+    ]))
+
+
 def gated_conv(x, filters, kernel_size=3, strides=1, dilation_rate=1, name=None):
     """Features times a learned sigmoid gate (Yu et al., 2019)."""
     features = layers.Conv2D(
