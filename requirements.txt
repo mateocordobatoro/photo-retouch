@@ -26,7 +26,6 @@ nbformat
 nbclient
 nbconvert[webpdf]
 # Application (app/app.py): interface and the pretrained stage-2 model
-streamlit
 gradio
 torch
 diffusers

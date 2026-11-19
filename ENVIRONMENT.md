@@ -25,9 +25,9 @@ python -m pip check
 
 ## Notebooks and shared code
 
-- `notebooks/photo_retouch_training.ipynb` records every experiment up to the low-chroma refiner, with outputs. It is no longer extended.
-- `notebooks/photo_retouch_refinement.ipynb` holds the refinement experiments. It loads the saved models and the frozen validation set and checks them against the tables in `records/` before any new experiment.
-- `notebooks/photo_retouch_evaluation.ipynb` is the final evaluation on the reserved test set. Its diffusion results are cached in `models/test_evaluation/`; without the cache, re-running it takes about two hours on the Apple M5.
+- `notebooks/01_training.ipynb` records every experiment up to the low-chroma refiner, with its outputs. It is no longer extended.
+- `notebooks/02_refinement.ipynb` holds the refinement experiments. Before any new experiment, it loads the saved models and the frozen validation set and checks them against the tables in `records/`.
+- `notebooks/03_evaluation.ipynb` is the final evaluation on the reserved test set. Its diffusion results are cached in `models/test_evaluation/`. Without that cache, re-running it takes about two hours on the Apple M5.
 - `src/photo_retouch/` holds the reusable code imported by the notebooks and the app: data loading, models, losses, training updates, metrics, plotting, write-once records, and the app's inpainting pipeline. `pyproject.toml` declares it as the `photo-retouch` package. The editable install (`pip install -e .`) means changes take effect after a kernel restart, without reinstalling.
 
 Trained models in `models/` are ignored by Git. Back them up separately; without them, the earlier experiments must be retrained.
@@ -56,24 +56,23 @@ Trained models in `models/` are ignored by Git. Back them up separately; without
 | nbformat | Read and validate notebook files. |
 | nbclient | Execute notebooks programmatically for verification. |
 | nbconvert[webpdf] | Export notebooks to HTML/PDF. The WebPDF exporter uses Playwright and a separately installed Chromium browser. |
-| Streamlit | Considered for the app; Gradio was used instead. |
 | Gradio | The app's interface (`app/app.py`): ImageEditor brush, result, stage gallery, and PNG download. |
 | PyTorch | Runs the app's pretrained diffusion model (stage 2) on Apple Metal (MPS), CUDA, or CPU. Not used for training. |
 | diffusers, transformers, accelerate, safetensors | Load and run Stable Diffusion 1.5 Inpainting for the app's stage 2. `importlib_metadata` is pinned below 10: version 10 pulls in `lazy-importer`, a new package with no author or project links on PyPI. |
 
-Python's standard library also provides `pathlib`, `json`, `platform`, `random`, `time`, and `io`; these do not require pip installation. Not every installed package needs to be imported in the training notebook: application and export tools belong in their respective stages.
+Python's standard library also provides `pathlib`, `json`, `platform`, `random`, `time`, and `io`; these do not require pip installation. Not every installed package is imported in every notebook: the application and export tools belong to their own stages.
 
-## Export the notebook
+## Export a notebook
 
 ```bash
-python -m jupyter nbconvert --to webpdf notebooks/photo_retouch_training.ipynb --output-dir outputs
+python -m jupyter nbconvert --to webpdf notebooks/03_evaluation.ipynb --output-dir outputs
 ```
 
-The output directory is ignored by Git. Interactive figures may need static equivalents in the final report.
+To export another notebook, change the name. The output directory is ignored by Git. Interactive figures may need static equivalents in the final report.
 
 ## Scope
 
-The environment prepares the tools for the workflow. The dataset has not been downloaded, and the actual model, full training run, and application have not been implemented. The environment check uses synthetic data only. Apple Metal GPU acceleration is configured for this Mac. CPU remains available as a fallback and for baseline timing.
+This file covers the tools, not the results: the notebooks hold the experiments and their results. The environment checks below use synthetic data only. Apple Metal GPU acceleration is configured for this Mac. The CPU remains available as a fallback and for baseline timing.
 
 Official references: [TensorFlow installation](https://www.tensorflow.org/install/pip), [Gradio ImageEditor](https://www.gradio.app/docs/gradio/imageeditor), [nbconvert WebPDF](https://nbconvert.readthedocs.io/en/latest/install.html#installing-chromium).
 
@@ -86,7 +85,9 @@ Official references: [TensorFlow installation](https://www.tensorflow.org/instal
 - A synthetic batch completed an optimizer update with a finite loss; model saving/loading passed.
 - OpenCV inpainting, SSIM, PNG writing, Matplotlib rendering, Plotly HTML output, and construction of the Gradio brush component passed.
 
-These checks validate the environment, not the quality of the future inpainting model or an end-to-end app.
+- The app ran end to end locally (PyTorch on Metal) and on its Hugging Face Space (ZeroGPU).
+
+These checks validate the environment, not the quality of the inpainting results.
 
 ## Apple M5 GPU workflow
 

@@ -1,6 +1,5 @@
 absl-py==2.5.1
 accelerate==1.16.0
-altair==6.3.0
 annotated-doc==0.0.6
 annotated-types==0.8.0
 anyio==4.16.0
@@ -59,7 +58,6 @@ ipython==9.18.1
 ipython_pygments_lexers==1.1.1
 ipywidgets==8.1.9
 isoduration==20.11.0
-itsdangerous==2.2.0
 jedi==0.20.1
 Jinja2==3.1.6
 joblib==1.6.0
@@ -123,11 +121,9 @@ protobuf==5.29.6
 psutil==7.2.2
 ptyprocess==0.7.0
 pure_eval==0.2.4
-pyarrow==26.0.1
 pycparser==3.12
 pydantic==2.14.3
 pydantic_core==2.50.4
-pydeck==0.9.3
 pydub==0.25.1
 Pygments==2.21.0
 pyparsing==3.3.3
@@ -159,7 +155,6 @@ six==1.17.0
 soupsieve==4.1.1
 stack-data==0.6.3
 starlette==1.10.0
-streamlit==1.67.0
 sympy==1.14.0
 tensorboard==2.18.0
 tensorboard-data-server==0.7.2
@@ -189,7 +184,6 @@ wcwidth==0.9.4
 webcolors==25.10.0
 webencodings==0.6.1
 websocket-client==1.9.2
-websockets==17.4
 Werkzeug==3.1.9
 wheel==0.48.0
 widgetsnbextension==4.0.16

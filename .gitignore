@@ -17,3 +17,4 @@ logs/
 *.h5
 *.hdf5
 *.ckpt*
+.claude/
