@@ -25,6 +25,7 @@ python -m pip check
 
 ## Notebooks and shared code
 
+- `notebooks/00_final_report.ipynb` is the final report submitted with its PDF. It loads the saved models, the frozen splits and masks, and the diffusion cache, and recomputes every reported result in about a minute. It retrains nothing.
 - `notebooks/01_training.ipynb` records every experiment up to the low-chroma refiner, with its outputs. It is no longer extended.
 - `notebooks/02_refinement.ipynb` holds the refinement experiments. Before any new experiment, it loads the saved models and the frozen validation set and checks them against the tables in `records/`.
 - `notebooks/03_evaluation.ipynb` is the final evaluation on the reserved test set. Its diffusion results are cached in `models/test_evaluation/`. Without that cache, re-running it takes about two hours on the Apple M5.
@@ -65,10 +66,10 @@ Python's standard library also provides `pathlib`, `json`, `platform`, `random`,
 ## Export a notebook
 
 ```bash
-python -m jupyter nbconvert --to webpdf notebooks/03_evaluation.ipynb --output-dir outputs
+python -m jupyter nbconvert --to webpdf notebooks/00_final_report.ipynb --output-dir outputs --output photo_retouch_final_report
 ```
 
-To export another notebook, change the name. The output directory is ignored by Git. Interactive figures may need static equivalents in the final report.
+To export another notebook, change the name. The report's first cell carries print styles that wrap long code lines, so nothing is cut at the page edge. The output directory is ignored by Git. Interactive figures may need static equivalents in the final report.
 
 ## Scope
 

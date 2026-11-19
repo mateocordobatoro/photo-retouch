@@ -35,6 +35,7 @@ The final evaluation used 400 reserved test images, 100 per category, and was ru
 
 | Path | Contents |
 | --- | --- |
+| [`notebooks/00_final_report.ipynb`](notebooks/00_final_report.ipynb) | The final report, organized as the course requires: data, preprocessing, methodology, architecture, tuning, training history, prediction, evaluation, interpretation, compute, next steps, and lessons learned. It loads the saved models and records and retrains nothing. |
 | [`notebooks/01_training.ipynb`](notebooks/01_training.ipynb) | Data download, exploration, and splits; masks; the U-Net experiments and the OpenCV comparison; the adversarial experiments; the two-stage refiner, up to the low-chroma refiner. |
 | [`notebooks/02_refinement.ipynb`](notebooks/02_refinement.ipynb) | Follow-up experiments on the refiner's texture artifacts: style weight, the source of the grid pattern, and a second training run. |
 | [`notebooks/03_evaluation.ipynb`](notebooks/03_evaluation.ipynb) | The final evaluation on the reserved test set. |
@@ -161,7 +162,11 @@ In VS Code, select **photo-retouch (Python 3.12)** as the notebook kernel.
 - A PDF export of that notebook.
 - A group presentation. The course requires a group of 5–7 students.
 
-**Status.** The experiments, the test evaluation, and the app are done. Still to do: the final report, its PDF export, and the presentation.
+**Status.**
+
+- **Done:** the experiments, the test evaluation, and the app.
+- **Final report:** `notebooks/00_final_report.ipynb`. Its PDF is exported to `outputs/` (see [ENVIRONMENT.md](ENVIRONMENT.md#export-a-notebook)). The group members' names and contributions are still to be filled in, in Section 14.
+- **Still to do:** the presentation.
 
 ## Repository hygiene
 
